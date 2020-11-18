@@ -72,8 +72,12 @@ public class ClientForm extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 try {
                     frequency = Double.parseDouble(txtFrequency.getText());
-                    sendCommand(txtFrequency.getText());
-                    btnStart.setEnabled(true);
+                    if(frequency != 0) {
+                        sendCommand(txtFrequency.getText());
+                        btnStart.setEnabled(true);
+                    } else {
+                        System.out.println("Frequency can not be set to 0.");
+                    }
                 } catch (Exception exc) {
                     System.out.println("Invalid value for freq.");
                 }

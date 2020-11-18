@@ -19,71 +19,81 @@ public class SwingWorkerRealTime extends Thread{
     SwingWrapper<XYChart> sw;
     XYChart chart;
     Socket s;
-    double freq = 100;
+    double freq;
 
-    public SwingWorkerRealTime(Socket s) {
+    public SwingWorkerRealTime(Socket s, double freq) {
         this.s = s;
+        this.freq = freq;
     }
 
     @Override
     public void run() {
-        chart = QuickChart.getChart("SwingWorker XChart Real-time Demo", "Time", "Value", "randomWalk", new double[] { 0 }, new double[] { 0 });
-        chart.getStyler().setLegendVisible(true);
-
+        chart = QuickChart.getChart("SwingWorker XChart Real-time", "Time", "Value", "Series", new double[] { 0 }, new double[] { 0 });
+        chart.getStyler().setLegendVisible(false);
+        chart.setTitle("Chart");
         chart.getStyler().setXAxisTicksVisible(true);
+        //chart.getStyler().setXAxisMin(2000.0);
 
         // Show it
         sw = new SwingWrapper<XYChart>(chart);
         sw.displayChart();
 
-
         mySwingWorker = new MySwingWorker();
         mySwingWorker.execute();
+
     }
 
+    public void reset() {
+        mySwingWorker.reset();
+    }
+    
     private class MySwingWorker extends SwingWorker<Boolean, double[]> {
 
-        LinkedList<Double> fifo = new LinkedList<Double>();
+        DataManager dm = new DataManager(freq);
 
         public MySwingWorker() {
+            //fifo.add(0.0);
+        }
 
-            fifo.add(0.0);
+        public void reset() {
+            dm.reset();
+            dm.setFreq(freq); //TODO when resseting the freq in dm is not set
+            publish(new double[0]);
         }
 
         @Override
         protected Boolean doInBackground() throws Exception {
 
             while (!isCancelled()) {
-                //read data from a socket
+                //reads data from a socket
                 try {
                     DataInputStream dataIs = new DataInputStream(s.getInputStream());
                     while (true) {
                         String data = dataIs.readLine();
-                        System.out.println(data);
+//                      System.out.println(data);
 
                         double doubleData = Double.parseDouble(data);
 
-                        //TODO remove jitter
+                        dm.addDataPoint(doubleData);
 
-                        double toDraw = (doubleData*freq)%(10*freq);
+                        //double toDraw = (doubleData*freq)%(10*freq);
+                        //System.out.println(toDraw+ " " +data);
 
-                        fifo.add(toDraw);
-                        if (fifo.size() > 500) {
-                            fifo.removeFirst();
-                        }
+                        //fifo.add(toDraw);
 
-                        double[] array = new double[fifo.size()];
-                        for (int i = 0; i < fifo.size(); i++) {
-                            array[i] = fifo.get(i);
-                        }
-                        publish(array);
+                        //draws last 20 seconds
+//                        while (fifo.size() > freq*20) {
+//                            fifo.removeFirst();
+//                        }
+                        //moved to process because it was late
+//                        double[] array = new double[fifo.size()];
+//                        for (int i = 0; i < fifo.size(); i++) {
+//                            array[i] = fifo.get(i);
+//                        }
 
-                        try {
-                            Thread.sleep(5);
-                        } catch (InterruptedException e) {
-                            // eat it. caught when interrupt is called
-                            System.out.println("MySwingWorker shut down.");
-                        }
+                        //gives data to the process to repaint the chart
+                        double[] f = {};
+                        publish(f);
                     }
                 } catch (IOException ex) {
                     Logger.getLogger(JavaClientKK.class.getName()).log(Level.SEVERE, null, ex);
@@ -96,22 +106,37 @@ public class SwingWorkerRealTime extends Thread{
 
         @Override
         protected void process(List<double[]> chunks) {
+            long start = System.currentTimeMillis();
 
-            System.out.println("number of chunks: " + chunks.size());
+//            System.out.println("number of chunks: " + chunks.size());
 
-            double[] mostRecentDataSet = chunks.get(chunks.size() - 1);
+//            double[] mostRecentDataSet = chunks.get(chunks.size() - 1);
 
-            chart.updateXYSeries("randomWalk", null, mostRecentDataSet, null);
+//            int l = fifo.size();
+//            double[] array = new double[l-1];
+//            for (int i = 0; i < l-1; i++) {
+//                array[i] = fifo.get(i);
+//            }
+
+
+            chart.updateXYSeries("Series", null, dm.getDataToDraw(), null);
             sw.repaintChart();
 
-            long start = System.currentTimeMillis();
+            //show only last 15 seconds
+            while (dm.getSize() > freq*15) {
+                 dm.removeFirst();
+            }
+
             long duration = System.currentTimeMillis() - start;
             try {
-                Thread.sleep(40 - duration); // 40 ms ==> 25fps
+//                Thread.sleep( 500); // 40 ms ==> 25fps
+                 Thread.sleep(40 - duration); // 40 ms ==> 2.5fps
                 // Thread.sleep(400 - duration); // 40 ms ==> 2.5fps
             } catch (InterruptedException e) {
+
             }
 
         }
     }
+
 }

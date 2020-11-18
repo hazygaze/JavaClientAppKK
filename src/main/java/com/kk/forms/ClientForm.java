@@ -13,6 +13,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -22,9 +23,14 @@ public class ClientForm extends JFrame {
     private JPanel panelMain;
     private JButton btnStart;
     private JButton btnStop;
-    private JPanel panelGraph;
+    private JPanel panelContent;
+    private JTextField txtFrequency;
+    private JLabel lblFrequency;
+    private JButton btnSetFreq;
 
     private static Socket s;
+    private double frequency;
+    SwingWorkerRealTime swrt;
 
     public Socket getS() {
         return s;
@@ -37,22 +43,40 @@ public class ClientForm extends JFrame {
     public ClientForm() {
         btnStart.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if(sendCommand(Commands.START)) {
-                    btnStart.setEnabled(false);
-                    btnStop.setEnabled(true);
 
-                    SwingWorkerRealTime swrt = new SwingWorkerRealTime(s);
+                if(swrt == null) {
+                    swrt = new SwingWorkerRealTime(s,frequency);
                     swrt.start();
+                } else {
+                    swrt.reset();
+                }
 
-                };
+                sendCommand(Commands.START);
+                btnStart.setEnabled(false);
+                btnStop.setEnabled(true);
 
             }
         });
+
         btnStop.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 sendCommand(Commands.STOP);
                 btnStart.setEnabled(true);
                 btnStop.setEnabled(false);
+                btnSetFreq.setEnabled(true);
+            }
+        });
+
+        btnSetFreq.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    frequency = Double.parseDouble(txtFrequency.getText());
+                    sendCommand(txtFrequency.getText());
+                    btnStart.setEnabled(true);
+                } catch (Exception exc) {
+                    System.out.println("Invalid value for freq.");
+                }
             }
         });
     }
@@ -80,13 +104,14 @@ public class ClientForm extends JFrame {
 
             JFrame clientForm = new JFrame("ClientForm");
             clientForm.setContentPane(new ClientForm().panelMain);
-            clientForm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            clientForm.setSize(700,700);
+            clientForm.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             clientForm.pack();
             clientForm.setVisible(true);
 
 
+
         } catch (IOException ex) {
+            System.out.println("Not able to connect to the server.");
             Logger.getLogger(JavaClientKK.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

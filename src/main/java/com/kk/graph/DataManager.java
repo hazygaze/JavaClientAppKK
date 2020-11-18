@@ -41,8 +41,9 @@ public class DataManager {
         return Math.round(data*freq) / freq;
     }
 
-    public void reset() {
+    public void reset(double freq) {
         fifo = new LinkedList<Double>();
+        this.freq = freq;
     }
 
     public int getSize() {

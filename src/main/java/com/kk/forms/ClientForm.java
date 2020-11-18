@@ -48,7 +48,7 @@ public class ClientForm extends JFrame {
                     swrt = new SwingWorkerRealTime(s,frequency);
                     swrt.start();
                 } else {
-                    swrt.reset();
+                    swrt.reset(frequency);
                 }
 
                 sendCommand(Commands.START);

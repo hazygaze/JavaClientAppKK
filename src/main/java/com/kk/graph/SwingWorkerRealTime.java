@@ -43,8 +43,8 @@ public class SwingWorkerRealTime extends Thread{
 
     }
 
-    public void reset() {
-        mySwingWorker.reset();
+    public void reset(double frequency) {
+        mySwingWorker.reset(frequency);
     }
     
     private class MySwingWorker extends SwingWorker<Boolean, double[]> {
@@ -55,9 +55,9 @@ public class SwingWorkerRealTime extends Thread{
             //fifo.add(0.0);
         }
 
-        public void reset() {
-            dm.reset();
-            dm.setFreq(freq); //TODO when resseting the freq in dm is not set
+        public void reset(double frequency) {
+            dm.reset(frequency);
+            //dm.setFreq(freq); //TODO when resseting the freq in dm is not set
             publish(new double[0]);
         }
 
